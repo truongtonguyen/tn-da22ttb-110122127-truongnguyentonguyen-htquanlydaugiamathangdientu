@@ -21,7 +21,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         authService.register(request);
-        return ResponseEntity.ok("Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.");
+        return ResponseEntity.ok(Map.of("message", "Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản."));
     }
 
     @PostMapping("/login")
@@ -33,22 +33,21 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
         authService.forgotPassword(request);
-        return ResponseEntity.ok("Nếu email tồn tại, liên kết đặt lại mật khẩu đã được gửi.");
+        return ResponseEntity.ok(Map.of("message", "Nếu email tồn tại, liên kết đặt lại mật khẩu đã được gửi."));
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
         try {
             authService.resetPassword(request);
-            return ResponseEntity.ok("Đặt lại mật khẩu thành công.");
+            return ResponseEntity.ok(Map.of("status", "SUCCESS"));
         } catch (RuntimeException e) {
-            // ✅ Tách rõ 2 trường hợp reset password
-            String msg = switch (e.getMessage()) {
-                case "TOKEN_INVALID" -> "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã được sử dụng.";
-                case "TOKEN_EXPIRED" -> "Liên kết đặt lại mật khẩu đã hết hạn. Vui lòng yêu cầu gửi lại email.";
-                default              -> e.getMessage();
+            String code = switch (e.getMessage()) {
+                case "TOKEN_EXPIRED" -> "TOKEN_EXPIRED";
+                case "TOKEN_INVALID" -> "TOKEN_INVALID";
+                default              -> "ERROR";
             };
-            return ResponseEntity.badRequest().body(msg);
+            return ResponseEntity.ok(Map.of("status", code));
         }
     }
 
@@ -56,26 +55,32 @@ public class AuthController {
     public ResponseEntity<?> verifyEmail(@RequestParam String token) {
         try {
             authService.verifyEmail(token);
-            return ResponseEntity.ok("EMAIL_VERIFIED");
+            return ResponseEntity.ok(Map.of("status", "SUCCESS"));
         } catch (RuntimeException e) {
-            // ✅ Tách rõ 2 trường hợp xác thực email
             String code = switch (e.getMessage()) {
-                case "TOKEN_INVALID" -> "EMAIL_TOKEN_INVALID";
-                case "TOKEN_EXPIRED" -> "EMAIL_TOKEN_EXPIRED";
-                default              -> "ERROR";
+                case "TOKEN_EXPIRED"          -> "TOKEN_EXPIRED";
+                // ✅ Đã xác thực rồi → trạng thái riêng
+                case "TOKEN_ALREADY_VERIFIED" -> "ALREADY_VERIFIED";
+                // Token không tìm thấy (đã dùng và bị xóa, hoặc sai)
+                case "TOKEN_NOT_FOUND"        -> "TOKEN_NOT_FOUND";
+                default                       -> "ERROR";
             };
-            return ResponseEntity.badRequest().body(code);
+            return ResponseEntity.ok(Map.of("status", code));
         }
     }
 
     @PostMapping("/resend-verification-email")
-    public ResponseEntity<?> resendVerificationEmail(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> resendVerificationEmail(@RequestBody java.util.Map<String, String> request) {
         String email = request.get("email");
         try {
             authService.resendVerificationEmail(email);
-            return ResponseEntity.ok("Email xác thực đã được gửi lại.");
+            return ResponseEntity.ok(Map.of("message", "Email xác thực đã được gửi lại."));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            String msg = switch (e.getMessage()) {
+                case "EMAIL_ALREADY_VERIFIED" -> "Email này đã được xác thực rồi. Bạn có thể đăng nhập.";
+                default                       -> e.getMessage();
+            };
+            return ResponseEntity.badRequest().body(Map.of("message", msg));
         }
     }
 }

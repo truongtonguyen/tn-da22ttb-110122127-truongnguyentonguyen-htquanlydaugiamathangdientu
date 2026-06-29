@@ -3,10 +3,11 @@ package com.auction.auction_system.service;
 import com.auction.auction_system.entity.User;
 import com.auction.auction_system.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -16,15 +17,12 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
-
         User user = userRepository.findByEmail(login)
                 .or(() -> userRepository.findByUsername(login))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + login));
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
-                new ArrayList<>()
-        );
+        // ✅ Trả về đúng User entity (đã implement UserDetails)
+        // thay vì tạo wrapper Spring User với authorities rỗng
+        return user;
     }
 }

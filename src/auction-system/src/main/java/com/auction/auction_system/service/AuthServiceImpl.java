@@ -44,10 +44,8 @@ public class AuthServiceImpl implements AuthService {
         user.setEmailVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
 
         User savedUser = userRepository.save(user);
-
         String verificationLink = "http://localhost:3000/verify-email?token=" + token;
         emailService.sendEmailVerificationEmail(user.getEmail(), verificationLink);
-
         return savedUser;
     }
 
@@ -86,9 +84,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void resetPassword(ResetPasswordRequest request) {
         User user = userRepository.findByResetPasswordToken(request.getToken())
-                .orElseThrow(() -> new RuntimeException(
-                        "TOKEN_INVALID"
-                ));
+                .orElseThrow(() -> new RuntimeException("TOKEN_INVALID"));
 
         if (user.getResetPasswordTokenExpiry() == null ||
                 LocalDateTime.now().isAfter(user.getResetPasswordTokenExpiry())) {
@@ -103,9 +99,23 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void verifyEmail(String token) {
-        // ✅ Tách rõ 2 trường hợp: token không tồn tại vs token hết hạn
-        User user = userRepository.findByEmailVerificationToken(token)
-                .orElseThrow(() -> new RuntimeException("TOKEN_INVALID"));
+        // ✅ Trước tiên tìm user theo token
+        var userOpt = userRepository.findByEmailVerificationToken(token);
+
+        if (userOpt.isEmpty()) {
+            // Token không tồn tại — có thể đã xác thực rồi
+            // Tìm xem có user nào có token này không (đã bị xóa sau xác thực)
+            // → không thể phân biệt "sai token" vs "đã dùng rồi" nếu không lưu lịch sử
+            // Tạm thời: throw TOKEN_ALREADY_VERIFIED để frontend hỏi email
+            throw new RuntimeException("TOKEN_NOT_FOUND");
+        }
+
+        User user = userOpt.get();
+
+        // ✅ Nếu đã xác thực rồi → trả về trạng thái riêng
+        if (user.isEmailVerified()) {
+            throw new RuntimeException("TOKEN_ALREADY_VERIFIED");
+        }
 
         if (user.getEmailVerificationTokenExpiry() == null ||
                 LocalDateTime.now().isAfter(user.getEmailVerificationTokenExpiry())) {
@@ -124,7 +134,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new RuntimeException("Email không tồn tại trong hệ thống"));
 
         if (user.isEmailVerified()) {
-            throw new RuntimeException("Email này đã được xác thực rồi");
+            throw new RuntimeException("EMAIL_ALREADY_VERIFIED");
         }
 
         String token = UUID.randomUUID().toString();
