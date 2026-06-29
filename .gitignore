@@ -1,0 +1,15 @@
+# Không push video demo lớn
+src/demo-video/*.mp4
+
+# React
+node_modules/
+
+# Java
+target/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
