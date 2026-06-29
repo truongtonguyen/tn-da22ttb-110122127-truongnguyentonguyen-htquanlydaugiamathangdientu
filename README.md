@@ -29,26 +29,26 @@ Bước 1: Clone source code: git clone <repository_url>
 
 Bước 2: Tạo database
 
- Mở MySQL và tạo database:
+  Mở MySQL và tạo database:
 
- CREATE DATABASE auction_db;
+  CREATE DATABASE auction_db;
 
- Import file SQL trong thư mục: src/database/
+  Import file SQL trong thư mục: src/database/
 
 Bước 3: Chạy Backend
 
- Đi tới thư mục backend: cd src/backend
+  Đi tới thư mục backend: cd src/backend
 
- Chạy project: mvn spring-boot:run
+  Chạy project: mvn spring-boot:run
 
- Backend mặc định chạy tại: http://localhost:8080
+  Backend mặc định chạy tại: http://localhost:8080
 
 Bước 4: Chạy Frontend
 
- Đi tới thư mục frontend: cd src/frontend
+  Đi tới thư mục frontend: cd src/frontend
 
- Cài dependencies: npm install
+  Cài dependencies: npm install
 
- Khởi động: npm start
+  Khởi động: npm start
 
- Frontend mặc định chạy tại: http://localhost:3000
+  Frontend mặc định chạy tại: http://localhost:3000
