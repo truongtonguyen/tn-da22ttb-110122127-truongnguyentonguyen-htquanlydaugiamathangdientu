@@ -122,6 +122,13 @@ public class AuctionService {
     }
 
     // =========================
+    // COUNT ALL (dùng cho thống kê admin)
+    // =========================
+    public long countAllAuctions() {
+        return auctionRepository.count();
+    }
+
+    // =========================
     // GET BY ID
     // =========================
     public Auction getAuctionById(Long id) {

@@ -31,7 +31,7 @@ public class SellerProfileController {
 
         long totalAuctions = allAuctions.size();
         long completedAuctions = allAuctions.stream()
-                .filter(a -> a.getStatus() == AuctionStatus.ENDED && a.getWinner() != null)
+                .filter(a -> a.getStatus() == AuctionStatus.SOLD && a.getWinner() != null)
                 .count();
         long activeAuctions = allAuctions.stream()
                 .filter(a -> a.getStatus() == AuctionStatus.ACTIVE)

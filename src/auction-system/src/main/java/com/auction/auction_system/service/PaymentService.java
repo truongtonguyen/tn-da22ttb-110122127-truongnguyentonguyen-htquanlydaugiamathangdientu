@@ -70,9 +70,12 @@ public class PaymentService {
         order.setConfirmedAt(LocalDateTime.now());
         orderRepository.save(order);
 
-        notificationService.sendWinnerNotification(1L,
-                "Đơn hàng #" + orderId + " cần xác nhận thanh toán — " +
-                order.getAuction().getTitle());
+        List<User> admins = userRepository.findByRole(Role.ADMIN);
+        for (User admin : admins) {
+            notificationService.sendWinnerNotification(admin.getId(),
+                    "Đơn hàng #" + orderId + " cần xác nhận thanh toán — " +
+                    order.getAuction().getTitle());
+        }
 
         return order;
     }

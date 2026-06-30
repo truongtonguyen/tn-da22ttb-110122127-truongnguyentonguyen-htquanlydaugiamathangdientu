@@ -59,10 +59,8 @@ public class AuthController {
         } catch (RuntimeException e) {
             String code = switch (e.getMessage()) {
                 case "TOKEN_EXPIRED"          -> "TOKEN_EXPIRED";
-                // ✅ Đã xác thực rồi → trạng thái riêng
                 case "TOKEN_ALREADY_VERIFIED" -> "ALREADY_VERIFIED";
-                // Token không tìm thấy (đã dùng và bị xóa, hoặc sai)
-                case "TOKEN_NOT_FOUND"        -> "TOKEN_NOT_FOUND";
+                case "TOKEN_INVALID"          -> "TOKEN_INVALID";
                 default                       -> "ERROR";
             };
             return ResponseEntity.ok(Map.of("status", code));

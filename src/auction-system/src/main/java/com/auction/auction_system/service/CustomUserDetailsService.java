@@ -21,8 +21,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .or(() -> userRepository.findByUsername(login))
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + login));
 
-        // ✅ Trả về đúng User entity (đã implement UserDetails)
-        // thay vì tạo wrapper Spring User với authorities rỗng
         return user;
     }
 }

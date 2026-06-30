@@ -29,7 +29,7 @@ public class BidService {
         this.auctionRepository = auctionRepository;
         this.messagingTemplate = messagingTemplate;
         this.notificationService = notificationService;
-        
+
     }
 
     private String maskName(String fullName) {
@@ -67,25 +67,22 @@ public Bid placeBid(Long auctionId,
         // đấu giá đã kết thúc
         if (now.isAfter(auction.getEndTime())) {
 
-    auction.setStatus(AuctionStatus.ENDED);
+            boolean reserveMet = auction.getHighestBid() != null
+                    && auction.getReservePrice() != null
+                    && auction.getHighestBid() >= auction.getReservePrice();
 
-    if (auction.getHighestBid() != null
-            && auction.getReservePrice() != null
-            && auction.getHighestBid() >= auction.getReservePrice()) {
+            if (reserveMet) {
+                auction.setWinner(auction.getHighestBidder());
+                auction.setStatus(AuctionStatus.SOLD);
+            } else {
+                auction.setWinner(null);
+                auction.setStatus(AuctionStatus.FAILED);
+            }
 
-        auction.setWinner(
-                auction.getHighestBidder()
-        );
+            auctionRepository.save(auction);
 
-    } else {
-
-        auction.setWinner(null);
-    }
-
-    auctionRepository.save(auction);
-
-    throw new RuntimeException("Auction has ended");
-}
+            throw new RuntimeException("Auction has ended");
+        }
 
         // chỉ ACTIVE mới được bid
         if (auction.getStatus() != AuctionStatus.ACTIVE) {
@@ -128,10 +125,14 @@ public Bid placeBid(Long auctionId,
                 currentPrice + step;
 
         if (amount < minValidBid) {
-
             throw new RuntimeException(
                     "Bid must be at least " + minValidBid
             );
+        }
+
+        // MỚI: chặn đặt giá bằng/vượt giá mua ngay — nên dùng chức năng Mua ngay thay vì đặt giá
+        if (auction.getBuyNowPrice() != null && amount >= auction.getBuyNowPrice()) {
+            throw new RuntimeException("BID_REACHES_BUYNOW");
         }
 
         // người thắng cũ
@@ -245,14 +246,14 @@ public Bid placeBid(Long auctionId,
                 .stream()
                 .map(bid -> {
                         Auction auction = bid.getAuction();
-        
+
                         // Lấy danh sách imageUrl
                         List<String> images = auction.getImages() != null
                                 ? auction.getImages().stream()
                                         .map(img -> img.getImageUrl())
                                         .toList()
                                 : List.of();
-        
+
                         // Winner info
                         Long winnerId = null;
                         String winnerName = null;
@@ -263,7 +264,7 @@ public Bid placeBid(Long auctionId,
                                 ? "Bạn"
                                 : maskName(auction.getWinner().getFullName());
                         }
-        
+
                         return BidResponseDTO.builder()
                                 .id(bid.getId())
                                 .amount(bid.getAmount())

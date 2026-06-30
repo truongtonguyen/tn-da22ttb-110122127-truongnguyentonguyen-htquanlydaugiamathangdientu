@@ -93,9 +93,9 @@ public class AdminController {
     @GetMapping("/stats")
     public AdminStatsDTO getStatistics() {
         Long totalUsers = userService.getUserCount();
-        Long totalAuctions = (long) auctionService.getAuctionsByStatus(AuctionStatus.ACTIVE).size()
-                + auctionService.getPendingAuctions().size()
-                + auctionService.getAuctionsByStatus(AuctionStatus.ENDED).size();
+        // Đếm tổng trực tiếp từ repository thay vì cộng dồn từng trạng thái,
+        // tránh sót trạng thái (trước đây thiếu UPCOMING, SOLD, FAILED, REJECTED)
+        Long totalAuctions = auctionService.countAllAuctions();
         Long pendingAuctions = (long) auctionService.getPendingAuctions().size();
         Long activeAuctions = (long) auctionService.getAuctionsByStatus(AuctionStatus.ACTIVE).size();
         Long soldAuctions = (long) auctionService.getAuctionsByStatus(AuctionStatus.SOLD).size();

@@ -99,32 +99,24 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void verifyEmail(String token) {
-        // ✅ Trước tiên tìm user theo token
-        var userOpt = userRepository.findByEmailVerificationToken(token);
+        // ✅ Token KHÔNG bị xóa sau khi xác thực — giữ lại để lần click sau
+        // vẫn tìm thấy user và biết chính xác "đã xác thực rồi" thay vì "không tìm thấy"
+        User user = userRepository.findByEmailVerificationToken(token)
+                .orElseThrow(() -> new RuntimeException("TOKEN_INVALID"));
 
-        if (userOpt.isEmpty()) {
-            // Token không tồn tại — có thể đã xác thực rồi
-            // Tìm xem có user nào có token này không (đã bị xóa sau xác thực)
-            // → không thể phân biệt "sai token" vs "đã dùng rồi" nếu không lưu lịch sử
-            // Tạm thời: throw TOKEN_ALREADY_VERIFIED để frontend hỏi email
-            throw new RuntimeException("TOKEN_NOT_FOUND");
-        }
-
-        User user = userOpt.get();
-
-        // ✅ Nếu đã xác thực rồi → trả về trạng thái riêng
+        // Đã xác thực từ trước (user bấm lại link cũ) → không phải lỗi
         if (user.isEmailVerified()) {
             throw new RuntimeException("TOKEN_ALREADY_VERIFIED");
         }
 
+        // Token hết hạn
         if (user.getEmailVerificationTokenExpiry() == null ||
                 LocalDateTime.now().isAfter(user.getEmailVerificationTokenExpiry())) {
             throw new RuntimeException("TOKEN_EXPIRED");
         }
 
+        // ✅ Xác thực thành công — chỉ đổi cờ, KHÔNG set token = null
         user.setEmailVerified(true);
-        user.setEmailVerificationToken(null);
-        user.setEmailVerificationTokenExpiry(null);
         userRepository.save(user);
     }
 
