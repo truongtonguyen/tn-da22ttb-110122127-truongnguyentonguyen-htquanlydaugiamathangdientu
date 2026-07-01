@@ -43,9 +43,10 @@ spring.datasource.password=your_password
 
 **Bước 4: Chạy Backend lần đầu để tạo bảng**
 
+```
 cd src/auction-system
-
 mvn spring-boot:run
+```
 
 Sau khi thấy `Started AuctionSystemApplication` trong log → **dừng server (Ctrl+C)**.
 Lúc này Hibernate đã tự tạo toàn bộ bảng trong `auction_db`.
@@ -55,17 +56,20 @@ Lúc này Hibernate đã tự tạo toàn bộ bảng trong `auction_db`.
 Mở MySQL, chọn database `auction_db` và import file: src/database/DbReset_full.sql
 
 **Bước 6: Chạy lại Backend**
+
+```
 mvn spring-boot:run
+```
 
 Backend chạy tại: http://localhost:8080
 
 **Bước 7: Chạy Frontend**
 
+```
 cd src/auction-system/auction-ui
-
 npm install
-
 npm start
+```
 
 Frontend chạy tại: http://localhost:3000
 
@@ -74,4 +78,4 @@ Frontend chạy tại: http://localhost:3000
 |---------------|--------------------|-----------|
 | Quản trị viên | admin@gmail.com    | 123456    |
 | Người dùng    | buyer1@gmail.com   | 123456    |
-| Người bán     | shopabc@gmail.com  | 123456    |
+| Người dùng    | shopabc@gmail.com  | 123456    |
