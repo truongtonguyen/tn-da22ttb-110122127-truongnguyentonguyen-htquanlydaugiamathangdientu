@@ -20,7 +20,8 @@ Cần cài đặt các phần mềm sau:
 - MySQL Server 8.0
 - Maven 3.8 hoặc cao hơn
 - Git
-
+- Python 3.8 hoặc cao hơn (dùng cho script kiểm thử Mua ngay đồng thời)
+  
 ### 4. Hướng dẫn cài đặt
 
 **Bước 1: Clone source code**
