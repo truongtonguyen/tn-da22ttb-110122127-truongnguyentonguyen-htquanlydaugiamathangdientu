@@ -58,6 +58,7 @@ Mở MySQL, chọn database `auction_db` và import file: src/database/DbReset_f
 **Bước 6: Chạy lại Backend**
 
 ```
+cd src/auction-system
 mvn spring-boot:run
 ```
 
@@ -78,4 +79,4 @@ Frontend chạy tại: http://localhost:3000
 |---------------|--------------------|-----------|
 | Quản trị viên | admin@gmail.com    | 123456    |
 | Người dùng    | buyer1@gmail.com   | 123456    |
-| Người dùng    | shopabc@gmail.com  | 123456    |
+| Người bán     | shopabc@gmail.com  | 123456    |
