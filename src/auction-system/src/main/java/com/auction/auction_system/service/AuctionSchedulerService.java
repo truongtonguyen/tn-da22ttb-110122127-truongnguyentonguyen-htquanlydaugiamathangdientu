@@ -3,6 +3,7 @@ package com.auction.auction_system.service;
 import com.auction.auction_system.entity.*;
 import com.auction.auction_system.repository.AuctionRepository;
 import com.auction.auction_system.repository.OrderRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -16,16 +17,19 @@ public class AuctionSchedulerService {
     private final OrderRepository orderRepository;
     private final NotificationService notificationService;
     private final EmailService emailService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public AuctionSchedulerService(
             AuctionRepository auctionRepository,
             OrderRepository orderRepository,
             NotificationService notificationService,
-            EmailService emailService) {
+            EmailService emailService,
+            SimpMessagingTemplate messagingTemplate) {
         this.auctionRepository = auctionRepository;
         this.orderRepository = orderRepository;
         this.notificationService = notificationService;
         this.emailService = emailService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Scheduled(fixedRate = 30000) // chạy mỗi 30 giây
@@ -41,6 +45,12 @@ public class AuctionSchedulerService {
                 auction.setStatus(AuctionStatus.ACTIVE);
                 auctionRepository.save(auction);
                 System.out.println("Activated auction: " + auction.getTitle());
+
+                // Thông báo frontend phiên bắt đầu
+                messagingTemplate.convertAndSend(
+                    "/topic/auction/" + auction.getId(),
+                    "STARTED"
+                );
             }
         }
 
@@ -66,11 +76,17 @@ public class AuctionSchedulerService {
             auction.setWinner(winner);
             auctionRepository.save(auction);
 
+            // Thông báo frontend phiên đã kết thúc — dùng cùng topic với bid
+            // để AuctionDetail tự reload mà không cần sửa thêm subscription
+            messagingTemplate.convertAndSend(
+                "/topic/auction/" + auction.getId(),
+                "ENDED"
+            );
+
             // =====================
             // TẠO ORDER nếu có winner
             // =====================
             if (winner != null) {
-                // Tránh tạo order trùng nếu scheduler chạy lại
                 boolean orderExists = orderRepository.existsByAuction(auction);
                 if (!orderExists) {
                     Order order = new Order();
@@ -84,19 +100,16 @@ public class AuctionSchedulerService {
                     System.out.println("Order created for auction: " + auction.getTitle()
                             + " | winner: " + winner.getEmail());
 
-                    // Thông báo trong app cho người thắng
                     notificationService.sendWinnerNotification(
                             winner.getId(),
                             "Chúc mừng! Bạn đã thắng đấu giá: " + auction.getTitle()
                     );
 
-                    // Thông báo trong app cho người bán
                     notificationService.sendAuctionEndedWinnerNotification(
                             auction.getSeller().getId(),
                             auction.getTitle()
                     );
 
-                    // Gửi email cho người thắng
                     try {
                         emailService.sendWinnerNotification(
                                 winner.getEmail(),
@@ -110,7 +123,6 @@ public class AuctionSchedulerService {
             } else {
                 System.out.println("Auction ended with no winner: " + auction.getTitle());
 
-                // Thông báo cho người bán biết phiên không đạt giá sàn
                 notificationService.sendAuctionFailedNotification(
                         auction.getSeller().getId(),
                         auction.getTitle()

@@ -20,6 +20,22 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
     List<Auction> findByStatusAndEndTimeBefore(AuctionStatus status, LocalDateTime now);
 
+@Query(value = """
+    SELECT * FROM auctions a
+    WHERE (:categoryId IS NULL OR a.category_id = :categoryId)
+    ORDER BY
+      CASE a.status
+        WHEN 'ACTIVE'   THEN 0
+        WHEN 'UPCOMING' THEN 1
+        ELSE 2
+      END ASC,
+      a.end_time ASC
+    """,
+    countQuery = "SELECT COUNT(*) FROM auctions a WHERE (:categoryId IS NULL OR a.category_id = :categoryId)",
+    nativeQuery = true)
+Page<Auction> findByCategoryIdSorted(@Param("categoryId") Long categoryId, Pageable pageable);
+
+
     @Query("""
         SELECT a FROM Auction a
         WHERE (:keyword IS NULL

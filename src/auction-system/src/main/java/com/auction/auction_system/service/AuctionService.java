@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.PageImpl;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -114,11 +115,16 @@ public class AuctionService {
     }
 
     // =========================
-    // GET ALL + PAGINATION
+    // GET ALL + PAGINATION (có thể lọc theo categoryId)
     // =========================
-    public Page<Auction> getAllAuctions(int page, int size) {
+    public Page<Auction> getAllAuctions(int page, int size, Long categoryId) {
         Pageable pageable = PageRequest.of(page, size);
-        return auctionRepository.findAll(pageable);
+        return auctionRepository.findByCategoryIdSorted(categoryId, pageable);
+    }
+
+    // Overload để giữ tương thích các chỗ gọi không truyền categoryId
+    public Page<Auction> getAllAuctions(int page, int size) {
+        return getAllAuctions(page, size, null);
     }
 
     // =========================
