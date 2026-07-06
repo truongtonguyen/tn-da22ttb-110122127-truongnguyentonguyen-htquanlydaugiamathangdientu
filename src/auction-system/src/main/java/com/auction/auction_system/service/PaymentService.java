@@ -38,7 +38,6 @@ public class PaymentService {
         return orderRepository.findAllByOrderByCreatedAtDesc();
     }
 
-    // ✅ Lấy đơn hàng theo người bán (để hiển thị doanh thu cho seller)
     public List<Order> getOrdersBySeller(User seller) {
         return orderRepository.findBySellerOrderByCreatedAtDesc(seller);
     }
@@ -97,7 +96,7 @@ public class PaymentService {
 
         notificationService.sendWinnerNotification(
                 order.getBuyer().getId(),
-                "Đơn hàng #" + orderId + " đang được giao đến bạn!"
+                "Đơn hàng #" + orderId + " đang được giao đến bạn! Sau khi nhận hàng, vui lòng xác nhận."
         );
         try {
             emailService.sendWinnerNotification(
@@ -113,19 +112,23 @@ public class PaymentService {
     }
 
     // =============================================
-    // Bước 3 (Admin): SHIPPING → PAID
-    // ✅ Tính hoa hồng 5% tại đây
+    // Bước 3 (Người mua): SHIPPING → PAID
+    // ✅ Người mua xác nhận nhận hàng OK → hệ thống giải phóng tiền cho người bán
     // =============================================
     @Transactional
-    public Order completeOrder(Long orderId) {
+    public Order completeOrder(Long orderId, User buyer) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        // ✅ Chỉ người mua mới được xác nhận nhận hàng
+        if (!order.getBuyer().getId().equals(buyer.getId()))
+            throw new RuntimeException("Bạn không có quyền xác nhận đơn hàng này");
 
         if (order.getStatus() != OrderStatus.SHIPPING)
             throw new RuntimeException("Đơn hàng chưa ở trạng thái đang giao");
 
-        // ✅ Tính hoa hồng 5% trên giá cuối
-        double commission    = Math.round(order.getFinalPrice() * COMMISSION_RATE * 100.0) / 100.0;
+        // Tính hoa hồng 5% khi người mua xác nhận OK
+        double commission     = Math.round(order.getFinalPrice() * COMMISSION_RATE * 100.0) / 100.0;
         double sellerReceives = Math.round((order.getFinalPrice() - commission) * 100.0) / 100.0;
 
         order.setCommissionFee(commission);
@@ -137,14 +140,15 @@ public class PaymentService {
         // Thông báo người mua
         notificationService.sendWinnerNotification(
                 order.getBuyer().getId(),
-                "Đơn hàng #" + orderId + " đã hoàn thành. Cảm ơn bạn!"
+                "Cảm ơn bạn đã xác nhận! Đơn hàng #" + orderId + " đã hoàn thành."
         );
 
-        // ✅ Thông báo người bán về doanh thu
+        // ✅ Thông báo người bán: tiền đã được giải phóng
         notificationService.sendWinnerNotification(
                 order.getAuction().getSeller().getId(),
-                String.format("Đơn hàng #%d hoàn thành! Bạn nhận được %,.0f VNĐ (sau phí 5%% hoa hồng)",
-                        orderId, sellerReceives)
+                String.format(
+                    "Người mua đã xác nhận nhận hàng! Đơn #%d hoàn thành. Bạn nhận được %,.0f VNĐ (sau phí 5%% hoa hồng).",
+                    orderId, sellerReceives)
         );
 
         return order;

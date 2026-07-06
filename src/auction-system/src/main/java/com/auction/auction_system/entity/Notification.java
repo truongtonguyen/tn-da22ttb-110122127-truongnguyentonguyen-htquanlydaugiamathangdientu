@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Table(name = "notifications")
 @Getter
 @Setter
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Notification {
@@ -25,7 +26,7 @@ public class Notification {
 
     @Builder.Default
     @Column(name = "is_read")
-    private boolean read;
+    private boolean read = false;
 
     private LocalDateTime createdAt;
 }

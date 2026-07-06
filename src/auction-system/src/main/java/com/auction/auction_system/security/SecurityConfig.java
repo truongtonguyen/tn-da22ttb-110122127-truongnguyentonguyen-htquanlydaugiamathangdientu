@@ -62,7 +62,19 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/api/orders/*/cancel").authenticated()
 
                     // Orders — admin
-                    .requestMatchers("/api/orders/**").hasRole("ADMIN")
+                    .requestMatchers(
+                    "/api/orders",                      // GET tất cả đơn hàng
+                    "/api/orders/*/confirm-shipping"    // Admin xác nhận giao hàng
+                ).hasRole("ADMIN")
+
+                    // Endpoint dành cho người dùng thường (người mua)
+                    .requestMatchers(
+                        "/api/orders/my-orders",            // Xem đơn của mình
+                        "/api/orders/seller-orders",        // Xem đơn của người bán
+                        "/api/orders/*/confirm-payment",    // Người mua xác nhận đã chuyển tiền
+                        "/api/orders/*/complete",           // Người mua xác nhận đã nhận hàng
+                        "/api/orders/*/cancel"              // Người mua hủy đơn
+                    ).hasAnyRole("USER", "ADMIN")
 
                     // Admin
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")

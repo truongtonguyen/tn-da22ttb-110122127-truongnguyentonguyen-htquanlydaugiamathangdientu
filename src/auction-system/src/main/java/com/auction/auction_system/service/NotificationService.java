@@ -78,7 +78,7 @@ public class NotificationService {
 
     public void sendAuctionEndedWinnerNotification(Long sellerId, String auctionTitle) {
         saveAndSend(sellerId,
-            "Phiên đấu giá \"" + auctionTitle + "\" đã kết thúc và có người thắng. Vui lòng xác nhận đơn hàng.");
+            "Phiên đấu giá \"" + auctionTitle + "\" đã kết thúc và có người thắng.");
     }
 
     public void sendAuctionFailedNotification(Long sellerId, String auctionTitle) {

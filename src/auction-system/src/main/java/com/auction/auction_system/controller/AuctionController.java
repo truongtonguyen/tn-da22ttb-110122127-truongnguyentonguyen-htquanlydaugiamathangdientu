@@ -43,6 +43,7 @@ public class AuctionController {
             @RequestParam(required = false) Double buyNowPrice,
             @RequestParam Integer durationDays,
             @RequestParam Double reservePrice,
+            @RequestParam(required = false) Double bidIncrementStep,
             @RequestParam MultipartFile[] images,
             Authentication authentication
     ) {
@@ -54,7 +55,7 @@ public class AuctionController {
 
         CreateAuctionRequest request = new CreateAuctionRequest(
                 title, description, categoryId,
-                startingPrice, buyNowPrice, durationDays, reservePrice
+                startingPrice, buyNowPrice, durationDays, bidIncrementStep, reservePrice
         );
 
         return auctionService.createAuction(request, seller, images);

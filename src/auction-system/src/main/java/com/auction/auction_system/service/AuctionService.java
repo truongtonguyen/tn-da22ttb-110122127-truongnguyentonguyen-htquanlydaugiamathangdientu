@@ -65,24 +65,28 @@ public class AuctionService {
             MultipartFile[] images) {
 
         try {
+            if (request.getBidIncrementStep() != null && request.getBidIncrementStep() <= 0) {
+    throw new RuntimeException("Bước giá phải lớn hơn 0");
+}
             Category category = categoryRepository
                     .findById(request.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
 
-            Auction auction = Auction.builder()
-                    .title(request.getTitle())
-                    .description(request.getDescription())
-                    .category(category)
-                    .startingPrice(request.getStartingPrice())
-                    .currentPrice(request.getStartingPrice())
-                    .highestBid(request.getStartingPrice())
-                    .reservePrice(request.getReservePrice())
-                    .buyNowPrice(request.getBuyNowPrice())
-                    .startTime(LocalDateTime.now())
-                    .endTime(LocalDateTime.now().plusDays(request.getDurationDays()))
-                    .seller(seller)
-                    .status(AuctionStatus.PENDING_APPROVAL)
-                    .build();
+                Auction auction = Auction.builder()
+            .title(request.getTitle())
+            .description(request.getDescription())
+            .category(category)
+            .startingPrice(request.getStartingPrice())
+            .currentPrice(request.getStartingPrice())
+            .highestBid(request.getStartingPrice())
+            .reservePrice(request.getReservePrice())
+            .buyNowPrice(request.getBuyNowPrice())
+            .bidIncrementStep(request.getBidIncrementStep())   // ✅ thêm dòng này
+            .startTime(LocalDateTime.now())
+            .endTime(LocalDateTime.now().plusDays(request.getDurationDays()))
+            .seller(seller)
+            .status(AuctionStatus.PENDING_APPROVAL)
+            .build();
 
             auction = auctionRepository.save(auction);
 
@@ -110,7 +114,7 @@ public class AuctionService {
             return auctionRepository.findById(auction.getId()).orElseThrow();
 
         } catch (IOException e) {
-            throw new RuntimeException("Upload images failed", e);
+            throw new RuntimeException("Tải ảnh lên thất bại", e);
         }
     }
 

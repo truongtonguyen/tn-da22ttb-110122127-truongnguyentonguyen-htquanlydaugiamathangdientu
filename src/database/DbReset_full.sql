@@ -1,11 +1,3 @@
--- =================================================================
--- KHÔI PHỤC TOÀN BỘ DỮ LIỆU — MÔ PHỎNG WEB ĐÃ VẬN HÀNH MỘT THỜI GIAN
--- Bao gồm: users, category, auctions, bids, orders (có commission_fee
--- và seller_receives), reports, notifications, auction_images
--- Khớp đúng tên file ảnh thực tế hiện có trong uploads/
--- Mật khẩu mọi tài khoản: 123456
--- =================================================================
-
 -- -----------------------------------------------------------------
 -- BƯỚC 1: XÓA SẠCH DỮ LIỆU CŨ (đúng thứ tự khóa ngoại)
 -- -----------------------------------------------------------------
@@ -132,7 +124,7 @@ INSERT INTO auctions (
   35000000, 42000000, 42000000,
   38000000, 42000000, 500000,
   DATE_SUB(NOW(), INTERVAL 8 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY),
-  'ENDED', 3, 2, 8, 8, 3
+  'SOLD', 3, 2, 8, 8, 3
 ),
 -- (8) Lenovo ThinkPad X1 — chờ duyệt
 (

@@ -14,5 +14,6 @@ public class CreateAuctionRequest {
     private Double startingPrice;
     private Double buyNowPrice;
     private Integer durationDays;
+    private Double bidIncrementStep;
     private Double reservePrice;
 }
