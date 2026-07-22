@@ -14,4 +14,7 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     boolean existsByAuctionIdAndBidderId(Long auctionId, Long bidderId);
 
+    long countByAuctionIdAndBidderId(Long auctionId, Long bidderId);
+
+    boolean existsByAuctionIdAndIpAddressAndBidderIdNot(Long auctionId, String ipAddress, Long bidderId);
 }

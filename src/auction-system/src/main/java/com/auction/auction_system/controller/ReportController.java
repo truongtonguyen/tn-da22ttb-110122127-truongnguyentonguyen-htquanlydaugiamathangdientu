@@ -5,6 +5,7 @@ import com.auction.auction_system.repository.AuctionRepository;
 import com.auction.auction_system.repository.ReportRepository;
 import com.auction.auction_system.repository.UserRepository;
 import com.auction.auction_system.service.UserService;
+import com.auction.auction_system.repository.OrderRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -21,16 +22,18 @@ public class ReportController {
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
     private final UserService userService;
-
+    private final OrderRepository orderRepository;
     public ReportController(
             ReportRepository reportRepository,
             UserRepository userRepository,
             AuctionRepository auctionRepository,
-            UserService userService) {
+            UserService userService,
+            OrderRepository orderRepository) {
         this.reportRepository = reportRepository;
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
         this.userService = userService;
+        this.orderRepository = orderRepository;
     }
 
     // =============================================
@@ -62,6 +65,14 @@ public class ReportController {
             throw new RuntimeException("Bạn đã báo cáo người dùng này rồi");
         }
 
+        // ✅ MỚI — bắt buộc phải từng có Order giữa 2 người (bất kể trạng thái)
+        boolean reporterBoughtFromReported = orderRepository.existsByBuyerAndAuction_Seller(reporter, reportedUser);
+        boolean reporterSoldToReported = orderRepository.existsByAuction_SellerAndBuyer(reporter, reportedUser);
+
+        if (!reporterBoughtFromReported && !reporterSoldToReported) {
+            throw new RuntimeException("Bạn chỉ có thể báo cáo người đã từng có giao dịch với bạn");
+        }
+
         Report report = Report.builder()
                 .reporter(reporter)
                 .reportedUser(reportedUser)
@@ -71,14 +82,12 @@ public class ReportController {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        // Gắn auction nếu có
         if (auctionId != null) {
             auctionRepository.findById(auctionId).ifPresent(report::setAuction);
         }
 
         return reportRepository.save(report);
     }
-
     // =============================================
     // ADMIN: Xem tất cả báo cáo
     // =============================================

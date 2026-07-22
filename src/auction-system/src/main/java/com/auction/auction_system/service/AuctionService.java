@@ -82,8 +82,7 @@ public class AuctionService {
             .reservePrice(request.getReservePrice())
             .buyNowPrice(request.getBuyNowPrice())
             .bidIncrementStep(request.getBidIncrementStep())   // ✅ thêm dòng này
-            .startTime(LocalDateTime.now())
-            .endTime(LocalDateTime.now().plusDays(request.getDurationDays()))
+            .durationDays(request.getDurationDays()) 
             .seller(seller)
             .status(AuctionStatus.PENDING_APPROVAL)
             .build();
@@ -154,7 +153,12 @@ public class AuctionService {
         if (auction.getStatus() != AuctionStatus.PENDING_APPROVAL) {
             throw new RuntimeException("Auction is not pending approval");
         }
-        auction.setStatus(AuctionStatus.UPCOMING);
+
+        LocalDateTime now = LocalDateTime.now();
+        auction.setStartTime(now);
+        auction.setEndTime(now.plusDays(auction.getDurationDays()));   // ✅ tính đúng lúc duyệt
+        auction.setStatus(AuctionStatus.ACTIVE);   // ✅ chạy ngay sau khi admin duyệt
+
         Auction saved = auctionRepository.save(auction);
 
         notificationService.sendAuctionApprovedNotification(
@@ -168,17 +172,19 @@ public class AuctionService {
     // =========================
     // REJECT
     // =========================
-    public Auction rejectAuction(Long id) {
+    public Auction rejectAuction(Long id, String reason) {
         Auction auction = getAuctionById(id);
         if (auction.getStatus() != AuctionStatus.PENDING_APPROVAL) {
             throw new RuntimeException("Auction is not pending approval");
         }
         auction.setStatus(AuctionStatus.REJECTED);
+        auction.setRejectReason(reason);
         Auction saved = auctionRepository.save(auction);
 
         notificationService.sendAuctionRejectedNotification(
                 auction.getSeller().getId(),
-                auction.getTitle()
+                auction.getTitle(),
+                reason   // ✅ truyền lý do vào thông báo
         );
 
         return saved;
@@ -218,24 +224,6 @@ public class AuctionService {
         return auctionRepository.search(keyword, status, pageable);
     }
 
-    // =========================
-    // ACTIVATE (dùng trong scheduler)
-    // =========================
-    public void activateAuctionIfNeeded(Auction auction) {
-        if (auction.getStatus() == AuctionStatus.UPCOMING
-                && LocalDateTime.now().isAfter(auction.getStartTime())) {
-            auction.setStatus(AuctionStatus.ACTIVE);
-            auctionRepository.save(auction);
-        }
-    }
-
-    // =========================
-    // CLOSE (dùng trong scheduler)
-    // CHÚ Ý: chưa xác nhận method này có đang được gọi ở đâu không.
-    // Logic ACTIVE→SOLD/FAILED thật sự đang chạy nằm ở AuctionSchedulerService.
-    // Nếu kiểm tra xác nhận không có nơi nào gọi closeAuctionIfExpired(...),
-    // nên xóa method này để tránh trùng lặp logic và gây nhầm lẫn khi đọc code.
-    // =========================
     public void closeAuctionIfExpired(Auction auction) {
 
         if (auction.getStatus() == AuctionStatus.ACTIVE
@@ -256,6 +244,7 @@ public class AuctionService {
             auctionRepository.save(auction);
         }
     }
+
 
     // =========================
     // BUY NOW

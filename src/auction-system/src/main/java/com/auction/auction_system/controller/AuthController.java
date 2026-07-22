@@ -24,10 +24,82 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản."));
     }
 
+    // ✅ Bước 1: kiểm tra email + mật khẩu → gửi OTP SMS (hoặc đăng nhập thẳng nếu app.otp.enabled=false)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        String token = authService.login(request);
-        return ResponseEntity.ok(token);
+        try {
+            String token = authService.login(request);
+
+            if (token != null) {
+                // OTP đang TẮT (app.otp.enabled=false) -> đăng nhập thành công luôn, không cần bước verify-otp
+                return ResponseEntity.ok(Map.of(
+                    "status", "SUCCESS",
+                    "token", token
+                ));
+            }
+
+            // OTP đang BẬT -> giữ nguyên hành vi cũ, chờ verify-otp
+            return ResponseEntity.ok(Map.of(
+                "status", "OTP_SENT",
+                "message", "Mã OTP đã được gửi đến số điện thoại của bạn."
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    // ✅ Bước 2: xác minh OTP → trả về JWT token
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(
+            @RequestBody Map<String, String> body,
+            jakarta.servlet.http.HttpServletRequest httpRequest   // ✅ thêm tham số
+    ) {
+        String email = body.get("email");
+        String otp   = body.get("otp");
+        try {
+            String clientIp = com.auction.auction_system.util.IpUtils.getClientIp(httpRequest);   // ✅ lấy IP
+            String token = authService.verifyLoginOtp(email, otp, clientIp);   // ✅ truyền IP
+            return ResponseEntity.ok(token);
+        } catch (RuntimeException e) {
+            String msg = e.getMessage();
+            if (msg.startsWith("OTP_LOCKED:")) {
+                long minutes = Long.parseLong(msg.split(":")[1]);
+                return ResponseEntity.badRequest().body(Map.of(
+                    "status", "OTP_LOCKED",
+                    "message", "Nhập sai quá 5 lần. Vui lòng thử lại sau " + minutes + " phút.",
+                    "lockedMinutes", minutes
+                ));
+            }
+            if (msg.startsWith("OTP_WRONG:")) {
+                int remaining = Integer.parseInt(msg.split(":")[1]);
+                return ResponseEntity.badRequest().body(Map.of(
+                    "status", "OTP_WRONG",
+                    "message", "Mã OTP không đúng. Còn " + remaining + " lần thử.",
+                    "remaining", remaining
+                ));
+            }
+            String friendlyMsg = switch (msg) {
+                case "OTP_EXPIRED"   -> "Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại.";
+                case "OTP_NOT_FOUND" -> "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.";
+                default              -> msg;
+            };
+            return ResponseEntity.badRequest().body(Map.of(
+                "status", "ERROR",
+                "message", friendlyMsg
+            ));
+        }
+    }
+
+    // ✅ Gửi lại OTP
+    @PostMapping("/resend-otp")
+    public ResponseEntity<?> resendOtp(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        try {
+            authService.resendLoginOtp(email);
+            return ResponseEntity.ok(Map.of("message", "Đã gửi lại mã OTP. Vui lòng kiểm tra tin nhắn."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     @PostMapping("/forgot-password")
@@ -68,7 +140,7 @@ public class AuthController {
     }
 
     @PostMapping("/resend-verification-email")
-    public ResponseEntity<?> resendVerificationEmail(@RequestBody java.util.Map<String, String> request) {
+    public ResponseEntity<?> resendVerificationEmail(@RequestBody Map<String, String> request) {
         String email = request.get("email");
         try {
             authService.resendVerificationEmail(email);

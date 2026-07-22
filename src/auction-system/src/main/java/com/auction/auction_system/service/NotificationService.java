@@ -71,9 +71,10 @@ public class NotificationService {
             "Phiên đấu giá \"" + auctionTitle + "\" của bạn đã được duyệt và sẽ bắt đầu theo thời gian đã đặt.");
     }
 
-    public void sendAuctionRejectedNotification(Long sellerId, String auctionTitle) {
-        saveAndSend(sellerId,
-            "Phiên đấu giá \"" + auctionTitle + "\" của bạn đã bị từ chối. Vui lòng kiểm tra lại thông tin sản phẩm.");
+    public void sendAuctionRejectedNotification(Long userId, String auctionTitle, String reason) {
+        String message = "Phiên đấu giá \"" + auctionTitle + "\" đã bị từ chối."
+            + (reason != null && !reason.isBlank() ? " Lý do: " + reason : "");
+        saveAndSend(userId, message);
     }
 
     public void sendAuctionEndedWinnerNotification(Long sellerId, String auctionTitle) {

@@ -1,10 +1,12 @@
 package com.auction.auction_system.controller;
 
 import com.auction.auction_system.dto.AdminAuctionDTO;
+import com.auction.auction_system.dto.AdminBidDTO;
 import com.auction.auction_system.dto.AdminStatsDTO;
 import com.auction.auction_system.dto.AdminUserDTO;
 import com.auction.auction_system.entity.Auction;
 import com.auction.auction_system.entity.AuctionStatus;
+import com.auction.auction_system.entity.Bid;
 import com.auction.auction_system.entity.User;
 import com.auction.auction_system.service.AuctionService;
 import com.auction.auction_system.service.BidService;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -57,10 +60,14 @@ public class AdminController {
         return auctionService.approveAuction(id);
     }
 
-    @PutMapping("/auctions/{id}/reject")
-    public Auction rejectAuction(@PathVariable Long id) {
-        return auctionService.rejectAuction(id);
-    }
+        @PutMapping("/auctions/{id}/reject")
+        public Auction rejectAuction(
+                @PathVariable Long id,
+                @RequestBody Map<String, String> body
+        ) {
+        String reason = body.getOrDefault("reason", "");
+        return auctionService.rejectAuction(id, reason);
+        }
 
     // ========================================
     // USER MANAGEMENT
@@ -87,14 +94,54 @@ public class AdminController {
     }
 
     // ========================================
+    // BID MANAGEMENT
+    // ========================================
+
+    @GetMapping("/bids")
+    public List<AdminBidDTO> getAllBids() {
+        List<Bid> allBids = bidService.getAllBids();
+
+        return allBids.stream()
+                .map(bid -> {
+                    String sellerIp = bid.getAuction().getSeller().getLastLoginIp();
+                    boolean suspiciousSellerIp = bid.getIpAddress() != null
+                            && bid.getIpAddress().equals(sellerIp);
+
+                    boolean suspiciousMultiAccount = allBids.stream()
+                            .anyMatch(other ->
+                                    !other.getId().equals(bid.getId())
+                                    && other.getAuction().getId().equals(bid.getAuction().getId())
+                                    && other.getIpAddress() != null
+                                    && other.getIpAddress().equals(bid.getIpAddress())
+                                    && !other.getBidder().getId().equals(bid.getBidder().getId())
+                            );
+
+                    return new AdminBidDTO(
+                            bid.getId(),
+                            bid.getAuction().getId(),
+                            bid.getAuction().getTitle(),
+                            bid.getBidder().getId(),
+                            bid.getBidder().getFullName() != null
+                                    ? bid.getBidder().getFullName()
+                                    : bid.getBidder().getUsername(),
+                            bid.getBidder().getEmail(),
+                            bid.getAmount(),
+                            bid.getBidTime(),
+                            bid.getIpAddress(),
+                            suspiciousSellerIp,
+                            suspiciousMultiAccount
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
+    // ========================================
     // STATISTICS & REPORTS
     // ========================================
 
     @GetMapping("/stats")
     public AdminStatsDTO getStatistics() {
         Long totalUsers = userService.getUserCount();
-        // Đếm tổng trực tiếp từ repository thay vì cộng dồn từng trạng thái,
-        // tránh sót trạng thái (trước đây thiếu UPCOMING, SOLD, FAILED, REJECTED)
         Long totalAuctions = auctionService.countAllAuctions();
         Long pendingAuctions = (long) auctionService.getPendingAuctions().size();
         Long activeAuctions = (long) auctionService.getAuctionsByStatus(AuctionStatus.ACTIVE).size();
@@ -118,7 +165,6 @@ public class AdminController {
     // ========================================
 
     private AdminAuctionDTO convertToAdminAuctionDTO(Auction auction) {
-        // Lấy ảnh đầu tiên nếu có
         String imageUrl = (auction.getImages() != null && !auction.getImages().isEmpty())
                 ? auction.getImages().get(0).getImageUrl()
                 : null;
@@ -129,7 +175,7 @@ public class AdminController {
                 auction.getDescription(),
                 auction.getStartingPrice(),
                 auction.getCurrentPrice(),
-                auction.getBuyNowPrice(),   // null nếu không thiết lập
+                auction.getBuyNowPrice(),
                 auction.getReservePrice(),
                 auction.getStatus(),
                 auction.getSeller().getFullName() != null

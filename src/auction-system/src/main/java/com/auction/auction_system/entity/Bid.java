@@ -41,4 +41,6 @@ public class Bid {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bidder_id", nullable = false)
     private User bidder;
+
+    private String ipAddress;
 }

@@ -26,10 +26,10 @@ public class Order {
 
     private Double finalPrice;
 
-    // ✅ Hoa hồng 5% trên finalPrice — tính khi PAID
+    // Hoa hồng 5% trên finalPrice — tính khi PAID
     private Double commissionFee;
 
-    // ✅ Số tiền người bán thực nhận = finalPrice - commissionFee
+    // Số tiền người bán thực nhận = finalPrice - commissionFee
     private Double sellerReceives;
 
     @Enumerated(EnumType.STRING)
@@ -37,18 +37,27 @@ public class Order {
 
     private LocalDateTime createdAt;
 
-    // Phương thức thanh toán: BANK_TRANSFER, MOMO, COD
+    // Phương thức thanh toán: BANK_TRANSFER, MOMO, COD, WALLET, VNPAY
     private String paymentMethod;
 
-    // Ghi chú của người mua khi xác nhận đã chuyển khoản
+    // Ghi chú của người mua khi xác nhận đã thanh toán
     private String paymentNote;
 
     // Thời điểm người mua xác nhận đã thanh toán
     private LocalDateTime confirmedAt;
 
-    // Thời điểm admin xác nhận và chuyển sang SHIPPING
+    //Thời điểm người bán xác nhận giao hàng (bước 2)
     private LocalDateTime shippedAt;
 
-    // Thời điểm hoàn thành
+    // Thời điểm người mua xác nhận đã nhận hàng
     private LocalDateTime completedAt;
+
+    @Builder.Default
+    private Boolean isOverdueCancel = false;
+
+    // true nếu người bán đã bị ghi nhận vi phạm giao hàng trễ
+    @Builder.Default
+    private Boolean latePenaltyApplied = false;
+
+    private String vnpTxnRef;
 }

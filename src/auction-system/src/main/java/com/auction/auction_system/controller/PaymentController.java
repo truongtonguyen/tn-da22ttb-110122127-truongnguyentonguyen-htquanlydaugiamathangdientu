@@ -26,7 +26,7 @@ public class PaymentController {
         return paymentService.getOrdersByBuyer(buyer);
     }
 
-    // Người bán: lấy đơn hàng từ phiên đấu giá của mình
+    // Người bán: lấy đơn hàng từ phiên của mình
     @GetMapping("/seller-orders")
     public List<Order> getSellerOrders(Authentication authentication) {
         User seller = (User) authentication.getPrincipal();
@@ -41,13 +41,10 @@ public class PaymentController {
             Authentication authentication
     ) {
         User buyer  = (User) authentication.getPrincipal();
-        String method = body.get("paymentMethod");
-        String note   = body.get("paymentNote");
-        return paymentService.confirmPayment(orderId, method, note, buyer);
+        return paymentService.confirmPayment(orderId, body.get("paymentMethod"), body.get("paymentNote"), buyer);
     }
 
     // ✅ Người mua: xác nhận đã nhận hàng OK (SHIPPING → PAID)
-    // Admin không còn quyền bấm bước này nữa
     @PostMapping("/{orderId}/complete")
     public Order completeOrder(
             @PathVariable Long orderId,
@@ -73,9 +70,13 @@ public class PaymentController {
         return paymentService.getAllOrders();
     }
 
-    // Admin: xác nhận giao hàng (PENDING_CONFIRMATION → SHIPPING)
+    // ✅ Người bán: xác nhận giao hàng (PENDING_CONFIRMATION → SHIPPING)
     @PostMapping("/{orderId}/confirm-shipping")
-    public Order confirmShipping(@PathVariable Long orderId) {
-        return paymentService.confirmShipping(orderId);
+    public Order confirmShipping(
+            @PathVariable Long orderId,
+            Authentication authentication
+    ) {
+        User seller = (User) authentication.getPrincipal();
+        return paymentService.confirmShipping(orderId, seller);
     }
 }

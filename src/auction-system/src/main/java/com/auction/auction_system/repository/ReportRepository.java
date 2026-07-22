@@ -4,8 +4,10 @@ import com.auction.auction_system.entity.Report;
 import com.auction.auction_system.entity.ReportStatus;
 import com.auction.auction_system.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import com.auction.auction_system.entity.Order;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
 

@@ -2,6 +2,8 @@ package com.auction.auction_system.service;
 
 import com.auction.auction_system.entity.Category;
 import com.auction.auction_system.repository.CategoryRepository;
+
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -38,9 +40,10 @@ public class CategoryService {
     }
 
     public void deleteCategory(Long id) {
-        if (!categoryRepository.existsById(id)) {
-            throw new RuntimeException("Category not found");
+        try {
+            categoryRepository.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("Không thể xóa danh mục này vì đang có sản phẩm liên kết. Vui lòng chuyển sản phẩm sang danh mục khác trước.");
         }
-        categoryRepository.deleteById(id);
     }
 }

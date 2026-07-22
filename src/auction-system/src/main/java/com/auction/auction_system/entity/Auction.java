@@ -79,4 +79,14 @@ public class Auction {
     private User winner;
 
     private Double reservePrice;
+
+    @Column(name = "extension_count")
+    @Builder.Default
+    private Integer extensionCount = 0;
+
+    @Column(name = "duration_days")
+    private Integer durationDays;
+
+    @Column(length = 1000)
+    private String rejectReason;
 }

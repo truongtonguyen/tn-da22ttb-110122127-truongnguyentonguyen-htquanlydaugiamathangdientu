@@ -1,8 +1,10 @@
 package com.auction.auction_system.service;
 
 import com.auction.auction_system.entity.*;
+import com.auction.auction_system.repository.AuctionEntryFeeRepository;
 import com.auction.auction_system.repository.AuctionRepository;
 import com.auction.auction_system.repository.OrderRepository;
+import com.auction.auction_system.repository.UserRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,8 @@ public class AuctionSchedulerService {
 
     private final AuctionRepository auctionRepository;
     private final OrderRepository orderRepository;
+    private final UserRepository userRepository;
+    private final AuctionEntryFeeRepository auctionEntryFeeRepository;
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -22,41 +26,25 @@ public class AuctionSchedulerService {
     public AuctionSchedulerService(
             AuctionRepository auctionRepository,
             OrderRepository orderRepository,
+            UserRepository userRepository,
+            AuctionEntryFeeRepository auctionEntryFeeRepository,
             NotificationService notificationService,
             EmailService emailService,
             SimpMessagingTemplate messagingTemplate) {
         this.auctionRepository = auctionRepository;
         this.orderRepository = orderRepository;
+        this.userRepository = userRepository;
+        this.auctionEntryFeeRepository = auctionEntryFeeRepository;
         this.notificationService = notificationService;
         this.emailService = emailService;
         this.messagingTemplate = messagingTemplate;
     }
 
-    @Scheduled(fixedRate = 30000) // chạy mỗi 30 giây
+    @Scheduled(fixedRate = 30000)
     public void updateAuctionStatus() {
         LocalDateTime now = LocalDateTime.now();
 
-        // =====================
-        // UPCOMING → ACTIVE
-        // =====================
-        List<Auction> upcoming = auctionRepository.findByStatus(AuctionStatus.UPCOMING);
-        for (Auction auction : upcoming) {
-            if (now.isAfter(auction.getStartTime())) {
-                auction.setStatus(AuctionStatus.ACTIVE);
-                auctionRepository.save(auction);
-                System.out.println("Activated auction: " + auction.getTitle());
-
-                // Thông báo frontend phiên bắt đầu
-                messagingTemplate.convertAndSend(
-                    "/topic/auction/" + auction.getId(),
-                    "STARTED"
-                );
-            }
-        }
-
-        // =====================
         // ACTIVE → SOLD / FAILED
-        // =====================
         List<Auction> expired = auctionRepository.findByStatusAndEndTimeBefore(
                 AuctionStatus.ACTIVE, now
         );
@@ -76,16 +64,38 @@ public class AuctionSchedulerService {
             auction.setWinner(winner);
             auctionRepository.save(auction);
 
-            // Thông báo frontend phiên đã kết thúc — dùng cùng topic với bid
-            // để AuctionDetail tự reload mà không cần sửa thêm subscription
-            messagingTemplate.convertAndSend(
-                "/topic/auction/" + auction.getId(),
-                "ENDED"
-            );
+            // ✅ HOÀN PHÍ cho tất cả người KHÔNG thắng
+            List<AuctionEntryFee> feeRecords =
+                    auctionEntryFeeRepository.findByAuctionIdAndRefundedFalse(auction.getId());
 
-            // =====================
-            // TẠO ORDER nếu có winner
-            // =====================
+            for (AuctionEntryFee fee : feeRecords) {
+                boolean isWinner = winner != null && fee.getBidder().getId().equals(winner.getId());
+
+                if (!isWinner) {
+                    User freshUser = userRepository.findById(fee.getBidder().getId())
+                            .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+                    double balance = freshUser.getBalance() != null ? freshUser.getBalance() : 0.0;
+                    freshUser.setBalance(balance + fee.getFeeAmount());
+                    userRepository.save(freshUser);
+
+                    fee.setRefunded(true);
+                    fee.setRefundedAt(LocalDateTime.now());
+                    auctionEntryFeeRepository.save(fee);
+
+                    notificationService.sendWinnerNotification(
+                            freshUser.getId(),
+                            "Bạn không thắng phiên \"" + auction.getTitle()
+                                    + "\". Phí tham gia " + String.format("%,.0f", fee.getFeeAmount())
+                                    + " VNĐ đã được hoàn lại vào ví."
+                    );
+                }
+                // Nếu là winner → giữ nguyên, không hoàn (refunded vẫn false, coi như đã "tiêu")
+            }
+
+            messagingTemplate.convertAndSend("/topic/auction/" + auction.getId(), "ENDED");
+
+            // TẠO ORDER — như code gốc, không còn phụ thuộc điều kiện phí nữa
             if (winner != null) {
                 boolean orderExists = orderRepository.existsByAuction(auction);
                 if (!orderExists) {
@@ -96,9 +106,6 @@ public class AuctionSchedulerService {
                     order.setStatus(OrderStatus.PENDING);
                     order.setCreatedAt(LocalDateTime.now());
                     orderRepository.save(order);
-
-                    System.out.println("Order created for auction: " + auction.getTitle()
-                            + " | winner: " + winner.getEmail());
 
                     notificationService.sendWinnerNotification(
                             winner.getId(),
@@ -121,8 +128,6 @@ public class AuctionSchedulerService {
                     }
                 }
             } else {
-                System.out.println("Auction ended with no winner: " + auction.getTitle());
-
                 notificationService.sendAuctionFailedNotification(
                         auction.getSeller().getId(),
                         auction.getTitle()

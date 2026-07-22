@@ -52,49 +52,54 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/sellers/**").permitAll()
 
-                    // User profile
                     .requestMatchers("/api/users/profile").authenticated()
                     .requestMatchers(HttpMethod.PUT, "/api/users/profile").authenticated()
 
-                    // Orders — người mua
                     .requestMatchers(HttpMethod.GET,  "/api/orders/my-orders").authenticated()
                     .requestMatchers(HttpMethod.POST, "/api/orders/*/confirm-payment").authenticated()
                     .requestMatchers(HttpMethod.POST, "/api/orders/*/cancel").authenticated()
 
-                    // Orders — admin
-                    .requestMatchers(
-                    "/api/orders",                      // GET tất cả đơn hàng
-                    "/api/orders/*/confirm-shipping"    // Admin xác nhận giao hàng
-                ).hasRole("ADMIN")
+                    // Orders — admin (chỉ xem)
+                    .requestMatchers(HttpMethod.GET, "/api/orders").hasRole("ADMIN")
 
-                    // Endpoint dành cho người dùng thường (người mua)
+                    // Orders — seller & buyer
                     .requestMatchers(
-                        "/api/orders/my-orders",            // Xem đơn của mình
-                        "/api/orders/seller-orders",        // Xem đơn của người bán
-                        "/api/orders/*/confirm-payment",    // Người mua xác nhận đã chuyển tiền
-                        "/api/orders/*/complete",           // Người mua xác nhận đã nhận hàng
-                        "/api/orders/*/cancel"              // Người mua hủy đơn
+                        "/api/orders/my-orders",
+                        "/api/orders/seller-orders",
+                        "/api/orders/*/confirm-payment",
+                        "/api/orders/*/confirm-shipping",
+                        "/api/orders/*/complete",
+                        "/api/orders/*/cancel"
                     ).hasAnyRole("USER", "ADMIN")
 
-                    // Admin
+                    // Wallet — xem danh sách
+                    .requestMatchers(HttpMethod.POST, "/api/wallet/topups/*/approve", "/api/wallet/topups/*/reject").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/wallet/topups").hasRole("ADMIN")
+                    // Wallet — user thường (số dư, tạo yêu cầu, lịch sử của mình)
+                    .requestMatchers("/api/wallet/**").authenticated()
+
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .requestMatchers("/api/users/**").hasRole("ADMIN")
                     .requestMatchers("/api/categories/**").hasRole("ADMIN")
 
-                    // Auctions
                     .requestMatchers(HttpMethod.POST, "/api/auctions").authenticated()
                     .requestMatchers(HttpMethod.POST, "/api/auctions/*/bids").authenticated()
                     .requestMatchers(HttpMethod.POST, "/api/auctions/*/buy-now").authenticated()
                     .requestMatchers("/uploads/**").permitAll()
 
-                    // Notifications
+                    .requestMatchers("/api/payment/vnpay-ipn", "/api/payment/vnpay-return", "/api/payment/vnpay-callback").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/payment/wallet-topup-url").authenticated()
+                    .requestMatchers(HttpMethod.POST, "/api/payment/order-payment-url/*").authenticated()
+
                     .requestMatchers("/api/notifications/**").authenticated()
 
-                    // Reports
                     .requestMatchers(HttpMethod.POST, "/api/reports").authenticated()
                     .requestMatchers("/api/reports/**").hasRole("ADMIN")
 
-                    // PHẢI luôn đặt anyRequest() ở CUỐI CÙNG
+                    .requestMatchers(HttpMethod.POST, "/api/withdrawals/*/complete", "/api/withdrawals/*/reject").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/withdrawals").hasRole("ADMIN")
+                    .requestMatchers("/api/withdrawals/**").authenticated()
+
                     .anyRequest().authenticated()
                 )
 
