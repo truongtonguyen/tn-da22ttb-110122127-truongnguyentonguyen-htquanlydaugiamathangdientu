@@ -124,7 +124,7 @@ app.otp.enabled=true → app.otp.enabled=false
 | Ngày phát hành | 07/15 |
 | OTP | 123456 |
  
-> Chọn tab **Thẻ nội địa / Internet Banking → NCB** trên trang VNPay, không dùng QR.
+> Chọn tab **Thẻ nội địa và tài khoản ngân hàng → NCB** trên trang VNPay, không dùng QR.
  
 ---
  

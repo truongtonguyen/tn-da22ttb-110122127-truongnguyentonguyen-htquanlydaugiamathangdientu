@@ -149,7 +149,7 @@ const WalletTopup = () => {
 
               {/* Gợi ý số tiền nhanh */}
               <div style={styles.quickAmounts}>
-                {[500000, 1000000, 2000000, 5000000, 10000000].map(v => (
+                {[500000, 1000000, 2000000, 5000000].map(v => (
                   <button key={v} style={styles.quickBtn} onClick={() => setAmount(String(v))}>
                     {v.toLocaleString("vi-VN")}
                   </button>
