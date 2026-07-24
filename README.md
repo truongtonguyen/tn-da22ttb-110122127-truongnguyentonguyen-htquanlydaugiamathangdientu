@@ -130,7 +130,9 @@ app.otp.enabled=true → app.otp.enabled=false
  
 ## Kiểm thử Mua ngay đồng thời
  
-Script `test_buy_now_concurrent.py` kiểm tra cơ chế Optimistic Locking: nhiều người cùng bấm "Mua ngay" trong một thời điểm, hệ thống chỉ cho phép đúng 1 người thành công.
+Script `test_buy_now_concurrent.py` kiểm tra cơ chế Optimistic Locking: nhiều người cùng bấm "Mua ngay" trong một thời điểm, hệ thống chỉ cho phép đúng 1 người thành công. Vào `application.properties`: 
+
+app.otp.enabled=true → app.otp.enabled=false
  
 ```bash
 pip install aiohttp

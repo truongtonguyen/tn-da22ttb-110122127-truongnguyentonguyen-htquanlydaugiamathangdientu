@@ -35,7 +35,7 @@ public class SmsService {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("x-api-key", apiKey); // ✅ TextBee dùng header x-api-key
+            conn.setRequestProperty("x-api-key", apiKey); 
             conn.setDoOutput(true);
 
             try (OutputStream os = conn.getOutputStream()) {

@@ -27,7 +27,7 @@ public class BidController {
             @PathVariable Long auctionId,
             @RequestBody CreateBidRequest request,
             Authentication authentication,
-            HttpServletRequest httpRequest       // ✅ thêm tham số
+            HttpServletRequest httpRequest      
     ) {
         Double amount = request.getAmount();
         User user = (User) authentication.getPrincipal();

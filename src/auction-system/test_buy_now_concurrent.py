@@ -357,6 +357,3 @@ async def run_stress(rounds: int = 3, delay_between: float = 2.0):
 if __name__ == "__main__":
     # Chạy 1 vòng kiểm thử
     asyncio.run(run_test())
-
-    # Kiểm thử nhiều vòng:
-    # asyncio.run(run_stress(rounds=3, delay_between=2.0))

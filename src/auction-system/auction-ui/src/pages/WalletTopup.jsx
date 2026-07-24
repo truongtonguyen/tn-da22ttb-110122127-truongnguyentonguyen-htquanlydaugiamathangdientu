@@ -81,7 +81,7 @@ const WalletTopup = () => {
         bankAccountNumber,
         bankAccountName,
       });
-      toast.success(`✅ Rút tiền thành công (giả lập)! ${formatPrice(withdrawAmount)} VNĐ đã được chuyển đến ${bankName} - ${bankAccountNumber}`);
+      toast.success(`Rút tiền thành công! ${formatPrice(withdrawAmount)} VNĐ đã được chuyển đến ${bankName} - ${bankAccountNumber}`);
       setWithdrawAmount(""); setBankName(""); setBankAccountNumber(""); setBankAccountName("");
       loadBalance();
       loadWithdrawals();

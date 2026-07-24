@@ -72,7 +72,7 @@ const MyAuctions = () => {
   };
 
   const handleConfirmShipping = async (orderId) => {
-    if (!window.confirm("Xác nhận đã nhận được thanh toán và bắt đầu giao hàng?")) return;
+    if (!window.confirm("Xác nhận đã bắt đầu giao hàng?")) return;
     try {
       await axiosClient.post(`/orders/${orderId}/confirm-shipping`);
       toast.success("Đã xác nhận giao hàng!");

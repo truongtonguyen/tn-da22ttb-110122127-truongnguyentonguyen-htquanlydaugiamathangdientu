@@ -392,7 +392,7 @@ const Profile = () => {
                     ? "Đang xử lý..."
                     : selectedMethod === "VNPAY"
                       ? <><Zap size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />Tiếp tục thanh toán VNPay</>
-                      : <><CheckCircle2 size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />Xác nhận đã thanh toán</>
+                      : <><CheckCircle2 size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />Xác nhận</>
                   }
                 </button>
               </div>
